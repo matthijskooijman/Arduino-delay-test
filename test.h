@@ -45,12 +45,18 @@ static inline void delayMicroseconds(uint16_t usec)
                             asm volatile(
                                     "ldi %A0, %1"           "\n\t"  // 1
                                     "ldi %B0, %2"           "\n\t"  // 1
+                                    // Add 3 cycles to round up to 5 cycles. 4 of these
+                                    // are compensated by reducing the loop count by 1,
+                                    // the last one compensates for the 1-cycle brne at
+                                    // the end
+                                    "rjmp L%=\nL%=:"        "\n\t"  // 2
+                                    "nop"                   "\n\t"  // 1
                             "L_%=_loop:"
                                     "sbiw   %A0, 1"         "\n\t"  // 2
                                     "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
                                     : "=w" (tmp)
-                                    : "M" (loops & 0xff),
-                                      "M" (loops >> 8)
+                                    : "M" ((loops - 1) & 0xff),
+                                      "M" ((loops - 1) >> 8)
 
                             );
                     }
