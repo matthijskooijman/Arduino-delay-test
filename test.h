@@ -30,22 +30,28 @@ static inline void delayMicroseconds(uint16_t usec)
             #endif
             if (loops > 0) {
                     if (loops < 256) {
-                            uint8_t tmp2 = loops;
+                            uint8_t tmp;
                             asm volatile(
-                            "L_%=_loop:"                            // 1 to load
+                                    "ldi %0, %1"            "\n\t"  // 1
+                            "L_%=_loop:"
                                     "subi   %0, 1"          "\n\t"  // 1
                                     "nop"                   "\n\t"  // 1
                                     "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
-                                    : "=d" (tmp2)
-                                    : "0" (tmp2)
+                                    : "=d" (tmp)
+                                    : "M" (loops)
                             );
                     } else {
+                            uint8_t tmp;
                             asm volatile(
-                            "L_%=_loop:"                            // 2 to load
+                                    "ldi %A0, %1"           "\n\t"  // 1
+                                    "ldi %B0, %2"           "\n\t"  // 1
+                            "L_%=_loop:"
                                     "sbiw   %A0, 1"         "\n\t"  // 2
                                     "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
-                                    : "=w" (loops)
-                                    : "0" (loops)
+                                    : "=w" (tmp)
+                                    : "M" (loops & 0xff),
+                                      "M" (loops >> 8)
+
                             );
                     }
             }
