@@ -5,18 +5,18 @@ static inline void delayMicroseconds(uint16_t usec)
 {
     if (__builtin_constant_p(usec)) {
             #if F_CPU == 16000000L
-            uint16_t tmp = usec * 4;
+            uint16_t loops = usec * 4;
             #elif F_CPU == 8000000L
-            uint16_t tmp = usec * 2;
+            uint16_t loops = usec * 2;
             #elif F_CPU == 4000000L
-            uint16_t tmp = usec;
+            uint16_t loops = usec;
             #elif F_CPU == 2000000L
-            uint16_t tmp = usec / 2;
+            uint16_t loops = usec / 2;
             if (usec % 2 == 1) {
                     asm volatile("rjmp L%=\nL%=:\n" ::);
             }
             #elif F_CPU == 1000000L
-            uint16_t tmp = usec / 4;
+            uint16_t loops = usec / 4;
             if (usec % 4 == 1) {
                     asm volatile("nop\n");
             } else if (usec % 4 == 2) {
@@ -28,9 +28,9 @@ static inline void delayMicroseconds(uint16_t usec)
             #else
             #error "Clock must be 16, 8, 4, 2 or 1 MHz"
             #endif
-            if (tmp > 0) {
-                    if (tmp < 256) {
-                            uint8_t tmp2 = tmp;
+            if (loops > 0) {
+                    if (loops < 256) {
+                            uint8_t tmp2 = loops;
                             asm volatile(
                             "L_%=_loop:"                            // 1 to load
                                     "subi   %0, 1"          "\n\t"  // 1
@@ -44,8 +44,8 @@ static inline void delayMicroseconds(uint16_t usec)
                             "L_%=_loop:"                            // 2 to load
                                     "sbiw   %A0, 1"         "\n\t"  // 2
                                     "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
-                                    : "=w" (tmp)
-                                    : "0" (tmp)
+                                    : "=w" (loops)
+                                    : "0" (loops)
                             );
                     }
             }
