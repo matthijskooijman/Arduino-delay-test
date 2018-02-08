@@ -12,16 +12,16 @@ static inline void delayMicroseconds(uint16_t usec)
             uint16_t tmp = usec;
             #elif F_CPU == 2000000L
             uint16_t tmp = usec / 2;
-            if (usec == 1) {
+            if (usec % 2 == 1) {
                     asm volatile("rjmp L%=\nL%=:\n" ::);
             }
             #elif F_CPU == 1000000L
             uint16_t tmp = usec / 4;
-            if (usec == 1) {
+            if (usec % 4 == 1) {
                     asm volatile("nop\n");
-            } else if (usec == 2) {
+            } else if (usec % 4 == 2) {
                     asm volatile("rjmp L%=\nL%=:\n" ::);
-            } else if (usec == 3) {
+            } else if (usec % 4 == 3) {
                     asm volatile("rjmp L%=\nL%=:\n" ::);
                     asm volatile("nop\n");
             }
