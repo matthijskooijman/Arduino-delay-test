@@ -62,7 +62,14 @@ static inline void delayMicroseconds(uint16_t usec)
                     }
             }
     } else {
+            uint16_t tmp;
             asm volatile(
+                    // This cycle compensates for the missing cycle in
+                    // the last brne below, and also prevents the
+                    // compiler from inserting this one. Both operands
+                    // might actually be the same register, but that's
+                    // ok.
+                    "movw   %A0, %A1"               "\n\t"  // 1
             #if F_CPU == 16000000L
                     "sbiw   %A0, 2"                 "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
@@ -98,10 +105,10 @@ static inline void delayMicroseconds(uint16_t usec)
             #endif
             "L_%=_loop:"
                     "sbiw   %A0, 1"                 "\n\t"  // 2
-                    "brne   L_%=_loop"              "\n\t"  // 2
+                    "brne   L_%=_loop"              "\n\t"  // 2 (1 on last)
             "L_%=_end:"
-                    : "=w" (usec)
-                    : "0" (usec)
+                    : "=w" (tmp)
+                    : "r" (usec)
             );
     }
 }
