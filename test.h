@@ -376,7 +376,8 @@ static void measure_all(Results& results) {
   Serial.println("Mhz");
   measure_range(results, 0, 100);
   measure_range(results, 101, 1000, 7);
-  measure_range(results, 1001, 10000, 97);
+  measure_range(results, 1000, 1100, 1); // Interesting range for possible overflows
+  measure_range(results, 1101, 10000, 97);
 
   results.f_cpu = F_CPU;
 }
