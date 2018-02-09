@@ -71,37 +71,59 @@ static inline void delayMicroseconds(uint16_t usec)
                     // ok.
                     "movw   %A0, %A1"               "\n\t"  // 1
             #if F_CPU == 16000000L
-                    "sbiw   %A0, 2"                 "\n\t"  // 2
+                    // 0.25us per loop, 16 cycles per us
+                    // overhead: 12 cycles = 0.75us
+                    // loops: (us - 1) * 4 + 1
+                    "sbiw   %A0, 1"                 "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
-                    "breq   L_%=_end"               "\n\t"  // 1
                     "lsl    %A0"                    "\n\t"  // 1
                     "rol    %B0"                    "\n\t"  // 1
                     "lsl    %A0"                    "\n\t"  // 1
-                    "rol    %B0"                    "\n\t"  // 1  overhead: (8)/4 = 2us
+                    "rol    %B0"                    "\n\t"  // 1
+                    "adiw   %A0, 1"                 "\n\t"  // 2
+                    // Round up to a multiple of 4 cycles
+                    "rjmp   L%=\nL%=:"              "\n\t"  // 2
+                    "nop"                           "\n\t"  // 1
             #elif F_CPU == 8000000L
-                    "sbiw   %A0, 3"                 "\n\t"  // 2
+                    // 0.5us per loop, 8 cycles per us
+                    // overhead: 8 cycles = 1us
+                    // loops: (us - 1) * 2
+                    "sbiw   %A0, 1"                 "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
+                    // Round up to a multiple of 4 cycles, and increase us=1 cycle count
+                    "rjmp   L%=\nL%=:"              "\n\t"  // 2
                     "breq   L_%=_end"               "\n\t"  // 1
                     "lsl    %A0"                    "\n\t"  // 1
-                    "rol    %B0"                    "\n\t"  // 1  overhead: (6)/2 = 3 us
+                    "rol    %B0"                    "\n\t"  // 1
             #elif F_CPU == 4000000L
+                    // 1us per loop, 4 cycles per us
+                    // overhead: 4 cycles = 1us
+                    // loops: (us - 1)
+                    "sbiw   %A0, 1"                 "\n\t"  // 2
+                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "breq   L_%=_end"               "\n\t"  // 1
+            #elif F_CPU == 2000000L
+                    // 2us per loop, 2 cycles per us
+                    // overhead: 8 cycles = 4us (excluding rounding compensation)
+                    // loops: (us - 4) / 2
                     "sbiw   %A0, 4"                 "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
-                    "breq   L_%=_end"               "\n\t"  // 1  overhead: (4) = 4 us
-            #elif F_CPU == 2000000L
-                    "sbiw   %A0, 12"                "\n\t"  // 2
-                    "brcs   L_%=_end"               "\n\t"  // 1
-                    "breq   L_%=_end"               "\n\t"  // 1
                     "lsr    %B0"                    "\n\t"  // 1
-                    "ror    %A0"                    "\n\t"  // 1  overhead: (6)*2 = 12 us
-            #elif F_CPU == 1000000L
-                    "sbiw   %A0, 32"                "\n\t"  // 2
-                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "ror    %A0"                    "\n\t"  // 1
+                    "sbiw   %A0, 0"                 "\n\t"  // 2
                     "breq   L_%=_end"               "\n\t"  // 1
+            #elif F_CPU == 1000000L
+                    // 4 us per loop, 1 cycle per us
+                    // overhead: 10 cycles = 10us
+                    // loops: (us - 10) / 4
+                    "sbiw   %A0, 10"                "\n\t"  // 2
+                    "brcs   L_%=_end"               "\n\t"  // 1
                     "lsr    %B0"                    "\n\t"  // 1
                     "ror    %A0"                    "\n\t"  // 1
                     "lsr    %B0"                    "\n\t"  // 1
-                    "ror    %A0"                    "\n\t"  // 1  overhead: (8)*4 = 32 us
+                    "ror    %A0"                    "\n\t"  // 1
+                    "sbiw   %A0, 0"                 "\n\t"  // 2
+                    "breq   L_%=_end"               "\n\t"  // 1
             #endif
             "L_%=_loop:"
                     "sbiw   %A0, 1"                 "\n\t"  // 2
