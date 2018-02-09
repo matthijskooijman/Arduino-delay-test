@@ -5,6 +5,9 @@ void delayMicroseconds(uint16_t usec)
 // This needs always_inline to ensure any constant argument reaches delayMicroseconds
 static inline void measure_one(Results&, uint16_t) __attribute__((__always_inline__));
 static inline void measure_one(Results& results, uint16_t us) {
+  // Clear overflow flag
+  TCNT1 = 0;
+  TIFR1 = (1 << TOV1);
   uint16_t start, end;
   // Access TCNT1 using assembly, so we can guarantee to know the exact overhead
   asm volatile (
@@ -24,7 +27,7 @@ static inline void measure_one(Results& results, uint16_t us) {
     : "M" (_SFR_MEM_ADDR(TCNT1L)),
       "M" (_SFR_MEM_ADDR(TCNT1H))
   );
-  process_results(results, us, start, end, F_CPU / 1000000);
+  process_results(results, us, start, end, TIFR1 & (1 << TOV1), F_CPU / 1000000);
 }
 
 static void measure_range(Results& results, uint16_t from, const uint16_t to, const uint16_t step = 1) {
