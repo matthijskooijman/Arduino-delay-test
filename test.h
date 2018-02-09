@@ -118,22 +118,47 @@ static inline void delayMicroseconds(uint16_t usec)
                     "breq   L_%=_end"               "\n\t"  // 1
             #elif F_CPU == 1000000L
                     // 4 us per loop, 1 cycle per us
-                    // overhead: 13 cycles = 13us
-                    // loops: (us - 13) / 4
-                    "sbiw   %A0, 13"                "\n\t"  // 2
+                    // overhead: 18 cycles = 18us (when us >= 19)
+                    // loops: (us - 19) / 4
+                    // no loops when us < 19
+                    "sbiw   %A0, 14"                "\n\t"  // 2
+                    "brcc   L_%=_big"               "\n\t"  // 1 (2 on branch)
+                    "adiw   %A0, 4"                 "\n\t"  // 2
+                    "brmi   L_%=_end"               "\n\t"  // 1
+                    // Branching to loopcheck with Z flag set adds 1 cycles
+                    "breq   L_%=_loopcheck"         "\n\t"  // 1
+                    "cpi    %A0, 2"                 "\n\t"  // 1
                     "brcs   L_%=_end"               "\n\t"  // 1
-                    "lsr    %B0"                    "\n\t"  // 1
-                    "ror    %A0"                    "\n\t"  // 1
-                    "brcs   L_%=_1\nL_%=_1:"        "\n\t"  // 1 (2 on carry)
-                    "lsr    %B0"                    "\n\t"  // 1
-                    "ror    %A0"                    "\n\t"  // 1
-                    "brcs   L_%=_2\nL_%=_2:"        "\n\t"  // 1 (2 on carry)
-                    "brcs   L_%=_3\nL_%=_3:"        "\n\t"  // 1 (2 on carry)
-                    "sbiw   %A0, 0"                 "\n\t"  // 2
                     "breq   L_%=_end"               "\n\t"  // 1
+                    "rjmp   L_%=_end"               "\n\t"  // 1
+                    "L_%=_big:"                     "\n\t"
+                    "sbiw   %A0, 5"                 "\n\t"  // 2
+                    "brcs   L_%=_notsobig"          "\n\t"  // 1 (2 on branch)
+                    "lsr    %B0"                    "\n\t"  // 1
+                    "ror    %A0"                    "\n\t"  // 1
+                    "brcs   L%=_1\nL%=_1:"          "\n\t"  // 1 (2 on carry)
+                    "lsr    %B0"                    "\n\t"  // 1
+                    "ror    %A0"                    "\n\t"  // 1
+                    "brcs   L%=_2\nL%=_2:"          "\n\t"  // 1 (2 on carry)
+                    "brcs   L%=_3\nL%=_3:"          "\n\t"  // 1 (2 on carry)
+                    "cpi    %A0, 1"                 "\n\t"  // 1
+                    "cpc    %B0, r1"                "\n\t"  // 1
+                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "rjmp   L_%=_loop"              "\n\t"  // 1
+                    "L_%=_notsobig:"                "\n\t"
+                    "adiw   %A0, 4"                 "\n\t"  // 2 11 to here
+                    // Branching to a jump-to-end instruction adds 2 cycles
+                    "breq   L_%=_jmp_to_end"        "\n\t"  // 1
+                    "brmi   L_%=_end"               "\n\t"  // 1
+                    "cpi    %A0, 2"                 "\n\t"  // 1
+                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "breq   L_%=_end"               "\n\t"  // 1
+                    "L_%=_jmp_to_end:"              "\n\t"
+                    "rjmp   L_%=_end"               "\n\t"  // 1
             #endif
             "L_%=_loop:"
                     "sbiw   %A0, 1"                 "\n\t"  // 2
+            "L_%=_loopcheck:"
                     "brne   L_%=_loop"              "\n\t"  // 2 (1 on last)
             "L_%=_end:"
                     : "=w" (tmp)
