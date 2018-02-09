@@ -48,12 +48,12 @@ static void process_results(Results& results, uint16_t us, uint16_t start, uint1
 namespace CPU24 {
   #undef F_CPU
   #define F_CPU 24000000
-  #include "test.h"
+  //#include "test.h"
 }
 namespace CPU20 {
   #undef F_CPU
   #define F_CPU 20000000
-  #include "test.h"
+  //#include "test.h"
 }
 namespace CPU16 {
   #undef F_CPU
@@ -91,12 +91,12 @@ void setup() {
 
   // Disable interrupts, so we don't measure interference from the timer or serial interrupts
   cli();
-  CPU24::measure_all(results[0]);
-  CPU20::measure_all(results[1]);
+  //CPU24::measure_all(results[0]);
+  //CPU20::measure_all(results[1]);
   CPU16::measure_all(results[2]);
   CPU8::measure_all(results[3]);
-  //CPU4::measure_all(results[4]);
-  //CPU2::measure_all(results[5]);
+  CPU4::measure_all(results[4]);
+  CPU2::measure_all(results[5]);
   CPU1::measure_all(results[6]);
   sei();
   
