@@ -6,18 +6,27 @@ struct Results {
 };
 Results results[7];
 
+static const bool show_ok = false;
+
 static void process_results(Results& results, uint16_t us, uint16_t start, uint16_t end, bool overflow, uint8_t cpu_mhz) {
   uint16_t cycles = (end - start);
   // Subtract the time to read TCNT1: 2 lds instructions at 2 cycles each
   cycles -= 4;
+  bool expected_overflow = us > (0xffff / cpu_mhz);
+  uint16_t expected_cycles = us * cpu_mhz;
+  bool ok = expected_cycles == cycles && overflow == expected_overflow;
+
+  if (ok) {
+    results.ok_count++;
+    if (!show_ok)
+      return;
+  }
+
   Serial.print("delayMicroseconds(");
   Serial.print(us);
   Serial.print("): ");
-  uint16_t expected_cycles = us * cpu_mhz;
-  bool expected_overflow = us > (0xffff / cpu_mhz);
-  if (expected_cycles == cycles && overflow == expected_overflow) {
+  if (ok) {
     Serial.println("OK");
-    results.ok_count++;
   } else {
     if (overflow && !expected_overflow)
       Serial.print("OVERFLOW ");
