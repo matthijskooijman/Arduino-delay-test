@@ -95,8 +95,8 @@ void setup() {
   CPU20::measure_all(results[1]);
   CPU16::measure_all(results[2]);
   CPU8::measure_all(results[3]);
-  CPU4::measure_all(results[4]);
-  CPU2::measure_all(results[5]);
+  //CPU4::measure_all(results[4]);
+  //CPU2::measure_all(results[5]);
   CPU1::measure_all(results[6]);
   sei();
   
