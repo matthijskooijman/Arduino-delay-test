@@ -4,7 +4,11 @@ static inline void delayMicroseconds(uint16_t) __attribute__((always_inline, unu
 static inline void delayMicroseconds(uint16_t usec)
 {
     if (__builtin_constant_p(usec)) {
-            #if F_CPU == 16000000L
+            #if F_CPU == 24000000L
+            uint16_t loops = usec * 6;
+            #elif F_CPU == 20000000L
+            uint16_t loops = usec * 5;
+            #elif F_CPU == 16000000L
             uint16_t loops = usec * 4;
             #elif F_CPU == 8000000L
             uint16_t loops = usec * 2;
@@ -26,7 +30,7 @@ static inline void delayMicroseconds(uint16_t usec)
                     asm volatile("nop\n");
             }
             #else
-            #error "Clock must be 16, 8, 4, 2 or 1 MHz"
+            #error "Clock must be 24, 20, 16, 8, 4, 2 or 1 MHz"
             #endif
             if (loops > 0) {
                     if (loops < 256) {
@@ -70,7 +74,39 @@ static inline void delayMicroseconds(uint16_t usec)
                     // might actually be the same register, but that's
                     // ok.
                     "movw   %A0, %A1"               "\n\t"  // 1
-            #if F_CPU == 16000000L
+            #if F_CPU == 24000000L
+                    // 0.17us per loop, 24 cycles per us
+                    // overhead: 12 cycles = 0.5us
+                    // loops: ((us - 1) * 2 + us) * 2 + 1
+                    //        ==  (us - 1) * 6 + 3
+                    "sbiw   %A0, 1"                 "\n\t"  // 2
+                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "lsl    %A0"                    "\n\t"  // 1
+                    "rol    %B0"                    "\n\t"  // 1
+                    "add    %A0, %A1"               "\n\t"  // 1
+                    "adc    %B0, %B1"               "\n\t"  // 1
+                    "lsl    %A0"                    "\n\t"  // 1
+                    "rol    %B0"                    "\n\t"  // 1
+                    "adiw   %A0, 1"                 "\n\t"  // 2
+                    // Round up to a multiple of 4 cycles
+                    "nop"                           "\n\t"  // 1
+            #elif F_CPU == 20000000L
+                    // 0.20us per loop, 20 cycles per us
+                    // overhead: 12 cycles = 0.6us
+                    // loops: ((us - 1) * 4 + us) + 1
+                    //        == (us - 1) * 5 + 2
+                    "sbiw   %A0, 1"                 "\n\t"  // 2
+                    "brcs   L_%=_end"               "\n\t"  // 1
+                    "lsl    %A0"                    "\n\t"  // 1
+                    "rol    %B0"                    "\n\t"  // 1
+                    "lsl    %A0"                    "\n\t"  // 1
+                    "rol    %B0"                    "\n\t"  // 1
+                    "add    %A0, %A1"               "\n\t"  // 1
+                    "adc    %B0, %B1"               "\n\t"  // 1
+                    "adiw   %A0, 1"                 "\n\t"  // 2
+                    // Round up to a multiple of 4 cycles
+                    "nop"                           "\n\t"  // 1
+            #elif F_CPU == 16000000L
                     // 0.25us per loop, 16 cycles per us
                     // overhead: 12 cycles = 0.75us
                     // loops: (us - 1) * 4 + 1
