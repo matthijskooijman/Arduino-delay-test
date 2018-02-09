@@ -104,12 +104,16 @@ static inline void delayMicroseconds(uint16_t usec)
                     "breq   L_%=_end"               "\n\t"  // 1
             #elif F_CPU == 2000000L
                     // 2us per loop, 2 cycles per us
-                    // overhead: 8 cycles = 4us (excluding rounding compensation)
+                    // overhead: 10 cycles = 5us (excluding rounding compensation)
                     // loops: (us - 4) / 2
-                    "sbiw   %A0, 4"                 "\n\t"  // 2
+                    "sbiw   %A0, 5"                 "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
                     "lsr    %B0"                    "\n\t"  // 1
                     "ror    %A0"                    "\n\t"  // 1
+                    // These brcs instructions add 2 cycles when the
+                    // division was rounded
+                    "brcs   L%=_abc\nL%=_abc:"      "\n\t"  // 1 (2 on carry)
+                    "brcs   L%=_abcd\nL%=_abcd:"    "\n\t"  // 1 (2 on carry)
                     "sbiw   %A0, 0"                 "\n\t"  // 2
                     "breq   L_%=_end"               "\n\t"  // 1
             #elif F_CPU == 1000000L
