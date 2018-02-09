@@ -118,14 +118,17 @@ static inline void delayMicroseconds(uint16_t usec)
                     "breq   L_%=_end"               "\n\t"  // 1
             #elif F_CPU == 1000000L
                     // 4 us per loop, 1 cycle per us
-                    // overhead: 10 cycles = 10us
-                    // loops: (us - 10) / 4
-                    "sbiw   %A0, 10"                "\n\t"  // 2
+                    // overhead: 13 cycles = 13us
+                    // loops: (us - 13) / 4
+                    "sbiw   %A0, 13"                "\n\t"  // 2
                     "brcs   L_%=_end"               "\n\t"  // 1
                     "lsr    %B0"                    "\n\t"  // 1
                     "ror    %A0"                    "\n\t"  // 1
+                    "brcs   L_%=_1\nL_%=_1:"        "\n\t"  // 1 (2 on carry)
                     "lsr    %B0"                    "\n\t"  // 1
                     "ror    %A0"                    "\n\t"  // 1
+                    "brcs   L_%=_2\nL_%=_2:"        "\n\t"  // 1 (2 on carry)
+                    "brcs   L_%=_3\nL_%=_3:"        "\n\t"  // 1 (2 on carry)
                     "sbiw   %A0, 0"                 "\n\t"  // 2
                     "breq   L_%=_end"               "\n\t"  // 1
             #endif
