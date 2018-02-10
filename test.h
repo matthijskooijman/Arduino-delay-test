@@ -1,70 +1,57 @@
+// Taken verbatim from util/delay.h
+static inline void _delay_us(double __us) __attribute__((always_inline));
+void _delay_us(double __us)
+{
+	double __tmp ; 
+#if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+  !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+  __STDC_HOSTED__
+	uint32_t __ticks_dc;
+	//extern void ::__builtin_avr_delay_cycles(unsigned long);
+	__tmp = ((F_CPU) / 1e6) * __us;
+
+	#if defined(__DELAY_ROUND_DOWN__)
+		__ticks_dc = (uint32_t)fabs(__tmp);
+
+	#elif defined(__DELAY_ROUND_CLOSEST__)
+		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
+
+	__builtin_avr_delay_cycles(__ticks_dc);
+
+#else
+	uint8_t __ticks;
+	double __tmp2 ; 
+	__tmp = ((F_CPU) / 3e6) * __us;
+	__tmp2 = ((F_CPU) / 4e6) * __us;
+	if (__tmp < 1.0)
+		__ticks = 1;
+	else if (__tmp2 > 65535)
+	{
+		_delay_ms(__us / 1000.0);
+	}
+	else if (__tmp > 255)
+	{
+		uint16_t __ticks=(uint16_t)__tmp2;
+		_delay_loop_2(__ticks);
+		return;
+	}
+	else
+		__ticks = (uint8_t)__tmp;
+	_delay_loop_1(__ticks);
+#endif
+}
 // Copy from Paul Stoffregen
 // https://github.com/arduino/Arduino/issues/7181#issuecomment-363353156
 static inline void delayMicroseconds(uint16_t) __attribute__((always_inline, unused));
 static inline void delayMicroseconds(uint16_t usec)
 {
     if (__builtin_constant_p(usec)) {
-            #if F_CPU == 24000000L
-            uint16_t loops = usec * 6;
-            #elif F_CPU == 20000000L
-            uint16_t loops = usec * 5;
-            #elif F_CPU == 16000000L
-            uint16_t loops = usec * 4;
-            #elif F_CPU == 8000000L
-            uint16_t loops = usec * 2;
-            #elif F_CPU == 4000000L
-            uint16_t loops = usec;
-            #elif F_CPU == 2000000L
-            uint16_t loops = usec / 2;
-            if (usec % 2 == 1) {
-                    asm volatile("rjmp L%=\nL%=:\n" ::);
-            }
-            #elif F_CPU == 1000000L
-            uint16_t loops = usec / 4;
-            if (usec % 4 == 1) {
-                    asm volatile("nop\n");
-            } else if (usec % 4 == 2) {
-                    asm volatile("rjmp L%=\nL%=:\n" ::);
-            } else if (usec % 4 == 3) {
-                    asm volatile("rjmp L%=\nL%=:\n" ::);
-                    asm volatile("nop\n");
-            }
-            #else
-            #error "Clock must be 24, 20, 16, 8, 4, 2 or 1 MHz"
-            #endif
-            if (loops > 0) {
-                    if (loops < 256) {
-                            uint8_t tmp;
-                            asm volatile(
-                                    "ldi %0, %1"            "\n\t"  // 1
-                            "L_%=_loop:"
-                                    "subi   %0, 1"          "\n\t"  // 1
-                                    "nop"                   "\n\t"  // 1
-                                    "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
-                                    : "=d" (tmp)
-                                    : "M" (loops)
-                            );
-                    } else {
-                            uint8_t tmp;
-                            asm volatile(
-                                    "ldi %A0, %1"           "\n\t"  // 1
-                                    "ldi %B0, %2"           "\n\t"  // 1
-                                    // Add 3 cycles to round up to 5 cycles. 4 of these
-                                    // are compensated by reducing the loop count by 1,
-                                    // the last one compensates for the 1-cycle brne at
-                                    // the end
-                                    "rjmp L%=\nL%=:"        "\n\t"  // 2
-                                    "nop"                   "\n\t"  // 1
-                            "L_%=_loop:"
-                                    "sbiw   %A0, 1"         "\n\t"  // 2
-                                    "brne   L_%=_loop"      "\n\t"  // 2 (1 on last)
-                                    : "=w" (tmp)
-                                    : "M" ((loops - 1) & 0xff),
-                                      "M" ((loops - 1) >> 8)
-
-                            );
-                    }
-            }
+        return _delay_us(usec);
     } else {
             uint16_t tmp;
             asm volatile(
